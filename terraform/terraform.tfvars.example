@@ -1,0 +1,8 @@
+aws_region         = "us-east-1"
+project_name       = "three-tier-eks"
+cluster_name       = "three-tier-eks"
+kubernetes_version = "1.29"
+node_instance_types = ["t3.medium"]
+desired_size       = 2
+min_size           = 1
+max_size           = 3
