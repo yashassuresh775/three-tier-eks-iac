@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: postgres
   namespace: three-tier
+  labels:
+    app: postgres
+    tier: data
 spec:
   replicas: 1
   selector:
@@ -18,7 +21,8 @@ spec:
         - name: postgres
           image: postgres:16-alpine
           ports:
-            - containerPort: 5432
+            - name: pg
+              containerPort: 5432
           envFrom:
             - secretRef:
                 name: postgres-secret
@@ -30,18 +34,18 @@ spec:
               command: ["pg_isready", "-U", "app", "-d", "appdb"]
             initialDelaySeconds: 5
             periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "appdb"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
       volumes:
         - name: data
           emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: three-tier
-spec:
-  selector:
-    app: postgres
-  ports:
-    - port: 5432
-      targetPort: 5432

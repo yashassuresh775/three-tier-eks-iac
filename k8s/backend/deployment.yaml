@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: backend
   namespace: three-tier
+  labels:
+    app: backend
+    tier: api
 spec:
   replicas: 2
   selector:
@@ -17,8 +20,10 @@ spec:
       containers:
         - name: backend
           image: IMAGE_BACKEND
+          imagePullPolicy: Always
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -28,24 +33,39 @@ spec:
           readinessProbe:
             httpGet:
               path: /api/health
-              port: 8000
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /api/health
-              port: 8000
+              port: http
             initialDelaySeconds: 15
             periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
 ---
-apiVersion: v1
-kind: Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
   name: backend
   namespace: three-tier
 spec:
-  selector:
-    app: backend
-  ports:
-    - port: 8000
-      targetPort: 8000
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

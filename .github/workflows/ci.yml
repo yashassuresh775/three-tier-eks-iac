@@ -10,12 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Python syntax
         run: python -m py_compile app/backend/app.py
+
       - name: Compose config
         run: docker compose config
+
       - name: Terraform fmt
-        run: terraform fmt -check -recursive terraform || true
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Check terraform formatting
+        run: terraform fmt -check -recursive terraform
+
+      - name: YAML presence
+        run: |
+          test -f k8s/namespace.yaml
+          test -f k8s/postgres/secret.yaml
+          test -f k8s/postgres/deployment.yaml
+          test -f k8s/postgres/service.yaml
+          test -f k8s/backend/deployment.yaml
+          test -f k8s/backend/service.yaml
+          test -f k8s/frontend/deployment.yaml
+          test -f k8s/frontend/service.yaml
+          test -f k8s/full_stack_lb.yaml
+          test -f k8s/ingress.yaml

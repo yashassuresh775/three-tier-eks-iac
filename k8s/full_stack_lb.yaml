@@ -1,0 +1,22 @@
+# Internet-facing entrypoint for the three-tier app.
+# Option A (default): classic AWS cloud-provider LoadBalancer (NLB/CLB).
+# Option B: after installing AWS Load Balancer Controller, apply ingress.yaml instead.
+apiVersion: v1
+kind: Service
+metadata:
+  name: full-stack-lb
+  namespace: three-tier
+  labels:
+    app: frontend
+    tier: edge
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

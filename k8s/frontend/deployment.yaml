@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: frontend
   namespace: three-tier
+  labels:
+    app: frontend
+    tier: web
 spec:
   replicas: 2
   selector:
@@ -17,24 +20,46 @@ spec:
       containers:
         - name: frontend
           image: IMAGE_FRONTEND
+          imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: http
             initialDelaySeconds: 3
             periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
 ---
-apiVersion: v1
-kind: Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
 metadata:
   name: frontend
   namespace: three-tier
 spec:
-  type: LoadBalancer
-  selector:
-    app: frontend
-  ports:
-    - port: 80
-      targetPort: 80
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
