@@ -1,7 +1,7 @@
-# three-tier-eks-iac (Project 2)
+# three-tier-eks-iac
 
 **Author:** [Yashas Suresh](https://github.com/yashassuresh775)  
-**Repo:** https://github.com/yashassuresh775/project-2
+**Repo:** https://github.com/yashassuresh775/three-tier-eks-iac
 
 Original three-tier application on **Amazon EKS** (not a fork of the workshop Mongo/Node reference):
 

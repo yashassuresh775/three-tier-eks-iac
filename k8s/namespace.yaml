@@ -4,4 +4,4 @@ metadata:
   name: three-tier
   labels:
     app.kubernetes.io/part-of: three-tier-eks
-    project: project-2
+    project: three-tier-eks-iac

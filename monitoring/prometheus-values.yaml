@@ -1,4 +1,4 @@
-# Integrated observability stack for Project 2 (required, not optional).
+# Integrated observability stack for three-tier-eks-iac (required, not optional).
 # Installed by: ./scripts/install-monitoring.sh (also called from install-addons.sh)
 
 grafana:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install integrated Prometheus + Grafana (kube-prometheus-stack).
-# This is a required Project 2 component — not optional.
+# This is a required three-tier-eks-iac component — not optional.
 #
 # Usage: ./scripts/install-monitoring.sh
 set -euo pipefail

@@ -1,7 +1,7 @@
-# Project 2 notes
+# three-tier-eks-iac notes
 
 This repository is an **original** three-tier EKS lab authored for
-https://github.com/yashassuresh775/project-2.
+https://github.com/yashassuresh775/three-tier-eks-iac.
 
 Differences from common Node + Mongo workshop repos:
 
