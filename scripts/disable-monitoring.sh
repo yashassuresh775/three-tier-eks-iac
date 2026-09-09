@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Disable monitoring before a demo (mirrors workshop "disable monitoring" flow).
+# Remove the integrated Prometheus + Grafana stack (use for teardown / cost control).
 set -euo pipefail
 helm uninstall monitoring -n monitoring --ignore-not-found || true
 kubectl delete namespace monitoring --ignore-not-found
-echo "Monitoring stack removed (if it was present)."
+echo "Prometheus + Grafana stack removed (if it was present)."

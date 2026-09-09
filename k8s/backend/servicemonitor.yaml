@@ -1,0 +1,20 @@
+# Scraped by kube-prometheus-stack (Prometheus Operator) after monitoring is installed.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend
+  namespace: three-tier
+  labels:
+    app: backend
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  namespaceSelector:
+    matchNames:
+      - three-tier
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

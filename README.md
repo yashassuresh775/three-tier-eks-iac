@@ -11,7 +11,7 @@ Original three-tier application on **Amazon EKS** (not a fork of the workshop Mo
 | API | Flask + Gunicorn backend |
 | Data | PostgreSQL 16 in-cluster |
 
-Infrastructure is provisioned with **Terraform** (VPC, EKS managed node group, ECR, IRSA for addons). Workloads and edge traffic use **Kubernetes manifests**. Optional **Prometheus + Grafana** via Helm.
+Infrastructure is provisioned with **Terraform** (VPC, EKS managed node group, ECR, IRSA for addons). Workloads and edge traffic use **Kubernetes manifests**. **Prometheus + Grafana** are integrated for cluster and application metrics.
 
 ---
 
@@ -21,7 +21,7 @@ Infrastructure is provisioned with **Terraform** (VPC, EKS managed node group, E
 Internet → NLB (full-stack-lb) → Frontend (nginx)
                                       │ /api/*
                                       ▼
-                                   Backend (Flask)
+                                   Backend (Flask) ──/metrics──► Prometheus → Grafana
                                       │
                                       ▼
                                    PostgreSQL
@@ -33,6 +33,8 @@ flowchart LR
   LB --> FE[Frontend nginx]
   FE -->|/api| BE[Backend Flask]
   BE --> DB[(PostgreSQL)]
+  BE -->|/metrics| Prom[Prometheus]
+  Prom --> Graf[Grafana]
 ```
 
 ---
@@ -101,19 +103,17 @@ kubectl get nodes
 
 ---
 
-## 3) Install cluster addons (Autoscaler, LB Controller, Grafana)
+## 3) Install cluster addons (Autoscaler, LB Controller, Prometheus + Grafana)
 
 ```bash
 ./scripts/install-addons.sh
 ```
 
-To skip monitoring (e.g. before a demo):
+This always installs:
 
-```bash
-SKIP_MONITORING=1 ./scripts/install-addons.sh
-# or later:
-./scripts/disable-monitoring.sh
-```
+- Cluster Autoscaler
+- AWS Load Balancer Controller
+- **Prometheus + Grafana** (`./scripts/install-monitoring.sh`) with dashboard **1860** pre-loaded
 
 ### Verify Autoscaler running
 
@@ -127,6 +127,13 @@ kubectl logs -f -n kube-system -l app=cluster-autoscaler
 ```bash
 kubectl logs -f -n kube-system \
   -l app.kubernetes.io/name=aws-load-balancer-controller
+```
+
+### Verify Prometheus + Grafana
+
+```bash
+kubectl -n monitoring get pods
+kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
 ```
 
 ---
@@ -228,7 +235,10 @@ export BACKEND_IMAGE=<ACCOUNT>.dkr.ecr.us-east-1.amazonaws.com/three-tier-eks-ba
 
 sed "s|IMAGE_BACKEND|${BACKEND_IMAGE}|g" k8s/backend/deployment.yaml | kubectl apply -f -
 kubectl apply -f k8s/backend/service.yaml
+kubectl apply -f k8s/backend/servicemonitor.yaml
 ```
+
+The **ServiceMonitor** tells Prometheus to scrape the backend `/metrics` endpoint.
 
 ---
 
@@ -296,9 +306,9 @@ curl http://<EXTERNAL-IP>/api/health
 
 ---
 
-## Grafana setup
+## 10) Prometheus + Grafana (integrated)
 
-If you ran `./scripts/install-addons.sh` without skipping monitoring:
+Installed as part of step 3. Open Grafana:
 
 ```bash
 kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
@@ -311,11 +321,11 @@ Open http://localhost:3000
 | Username | `admin` |
 | Password | `prom-operator` |
 
-Import Dashboard ID: **1860** (Node Exporter Full)
+Dashboard **1860** (Node Exporter Full) is pre-loaded. Backend app metrics are scraped via `k8s/backend/servicemonitor.yaml` (`/metrics`).
 
 Explore more at: https://grafana.com/grafana/dashboards/
 
-Disable monitoring before a demo:
+Teardown monitoring only (cost control):
 
 ```bash
 ./scripts/disable-monitoring.sh
@@ -328,6 +338,7 @@ Disable monitoring before a demo:
 - `GET /api/health`
 - `GET /api/items`
 - `POST /api/items` with `{"name":"..."}`
+- `GET /metrics` — Prometheus metrics (scraped by ServiceMonitor)
 
 ---
 
@@ -338,8 +349,9 @@ app/backend/          Flask API + Dockerfile
 app/frontend/         Static UI + nginx proxy
 k8s/                  Namespace, postgres, backend, frontend, LB, ingress
 terraform/            VPC, EKS, ECR, IRSA for addons
-scripts/              build-push, deploy, install-addons, disable-monitoring
-monitoring/           Helm values for kube-prometheus-stack
+scripts/              build-push, deploy, install-addons, install-monitoring, disable-monitoring
+monitoring/           Helm values for integrated Prometheus + Grafana
+k8s/backend/servicemonitor.yaml   Prometheus scrape config for Flask /metrics
 docker-compose.yml    Local three-tier stack
 ```
 

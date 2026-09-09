@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Cluster Autoscaler, AWS Load Balancer Controller, and (optionally) kube-prometheus-stack.
+# Install Cluster Autoscaler, AWS Load Balancer Controller, and Prometheus + Grafana.
 #
 # Prerequisites:
 #   - terraform apply completed
@@ -8,7 +8,6 @@
 #
 # Usage:
 #   ./scripts/install-addons.sh
-#   SKIP_MONITORING=1 ./scripts/install-addons.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REGION="${AWS_REGION:-us-east-1}"
@@ -21,9 +20,9 @@ VPC_ID="$(terraform output -raw vpc_id)"
 cd "$ROOT"
 
 echo "==> Helm repos"
-helm repo add autoscaler https://kubernetes.github.io/autoscaler >/dev/null
-helm repo add eks https://aws.github.io/eks-charts >/dev/null
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null
+helm repo add autoscaler https://kubernetes.github.io/autoscaler >/dev/null 2>&1 || true
+helm repo add eks https://aws.github.io/eks-charts >/dev/null 2>&1 || true
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
 helm repo update >/dev/null
 
 echo "==> Cluster Autoscaler"
@@ -47,20 +46,13 @@ helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-contro
   --set serviceAccount.name=aws-load-balancer-controller \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$LB_ROLE"
 
-if [[ "${SKIP_MONITORING:-0}" != "1" ]]; then
-  echo "==> kube-prometheus-stack (Prometheus + Grafana)"
-  helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-    --namespace monitoring \
-    --create-namespace \
-    -f "$ROOT/monitoring/prometheus-values.yaml"
-fi
+echo "==> Prometheus + Grafana (integrated)"
+"$ROOT/scripts/install-monitoring.sh"
 
 echo
 echo "Verify addons:"
 echo "  kubectl get pods -n kube-system"
 echo "  kubectl logs -f -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller"
 echo "  kubectl logs -f -n kube-system -l app=cluster-autoscaler"
-if [[ "${SKIP_MONITORING:-0}" != "1" ]]; then
-  echo "  kubectl -n monitoring get pods"
-  echo "  kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80"
-fi
+echo "  kubectl -n monitoring get pods"
+echo "  kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80"

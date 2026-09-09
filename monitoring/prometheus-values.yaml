@@ -1,12 +1,39 @@
+# Integrated observability stack for Project 2 (required, not optional).
+# Installed by: ./scripts/install-monitoring.sh (also called from install-addons.sh)
+
 grafana:
   adminUser: admin
   adminPassword: prom-operator
   service:
     type: ClusterIP
+  # Pre-load Node Exporter Full dashboard (ID 1860)
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      node-exporter-full:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
 
 prometheus:
   prometheusSpec:
     retention: 7d
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
     resources:
       requests:
         cpu: 200m
@@ -15,7 +42,6 @@ prometheus:
 alertmanager:
   enabled: false
 
-# Keep node footprint smaller for lab clusters
 defaultRules:
   create: true
 

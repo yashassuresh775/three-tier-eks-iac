@@ -37,7 +37,10 @@ jobs:
           test -f k8s/postgres/service.yaml
           test -f k8s/backend/deployment.yaml
           test -f k8s/backend/service.yaml
+          test -f k8s/backend/servicemonitor.yaml
           test -f k8s/frontend/deployment.yaml
           test -f k8s/frontend/service.yaml
           test -f k8s/full_stack_lb.yaml
           test -f k8s/ingress.yaml
+          test -f monitoring/prometheus-values.yaml
+          test -f scripts/install-monitoring.sh

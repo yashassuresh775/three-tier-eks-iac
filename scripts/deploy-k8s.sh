@@ -24,6 +24,13 @@ sed "s|IMAGE_BACKEND|${BACKEND_IMAGE}|g" "$ROOT/k8s/backend/deployment.yaml" | k
 kubectl apply -f "$ROOT/k8s/backend/service.yaml"
 kubectl -n "$NS" rollout status deploy/backend --timeout=180s
 
+echo "==> Prometheus ServiceMonitor (backend /metrics)"
+if kubectl apply -f "$ROOT/k8s/backend/servicemonitor.yaml"; then
+  echo "ServiceMonitor applied — Prometheus will scrape backend metrics."
+else
+  echo "WARN: ServiceMonitor CRD missing. Install monitoring first: ./scripts/install-monitoring.sh"
+fi
+
 echo "==> Frontend"
 sed "s|IMAGE_FRONTEND|${FRONTEND_IMAGE}|g" "$ROOT/k8s/frontend/deployment.yaml" | kubectl apply -f -
 kubectl apply -f "$ROOT/k8s/frontend/service.yaml"

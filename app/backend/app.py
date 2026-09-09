@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 import psycopg2
 from flask import Flask, jsonify, request
+from prometheus_flask_exporter import PrometheusMetrics
 from psycopg2.extras import RealDictCursor
 
 DATABASE_URL = os.getenv(
@@ -18,6 +19,8 @@ DATABASE_URL = os.getenv(
 )
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app, path="/metrics")
+metrics.info("backend_app", "Three-tier EKS backend", version="1.0.0")
 
 
 @contextmanager
